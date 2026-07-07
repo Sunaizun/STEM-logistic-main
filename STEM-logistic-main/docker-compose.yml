@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: stem_wms_db
+    environment:
+      POSTGRES_USER: stem
+      POSTGRES_PASSWORD: stem
+      POSTGRES_DB: stem_wms
+    ports:
+      - "5435:5432"
+    volumes:
+      - stem_wms_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stem -d stem_wms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: stem_wms_backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://stem:stem@db:5432/stem_wms
+      JWT_SECRET_KEY: d4f8a2b1c9e6f3a7b5d0c8e2f4a6b9c1
+      CORS_ORIGINS: http://localhost:3000
+      PUBLIC_BASE_URL: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: stem_wms_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  stem_wms_pg:
