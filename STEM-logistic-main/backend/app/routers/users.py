@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,6 +11,13 @@ from app.security import hash_password
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+def normalize_phone(raw: str) -> str:
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if digits.startswith("8") and len(digits) == 11:
+        digits = "7" + digits[1:]
+    return digits
+
+
 @router.get("", response_model=list[UserOut])
 def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))):
     return db.execute(select(User).order_by(User.created_at.desc())).scalars().all()
@@ -18,12 +25,25 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(requi
 
 @router.post("", response_model=UserOut)
 def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles(UserRole.ADMIN))):
-    existing = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already exists")
+    if not payload.email and not payload.phone:
+        raise HTTPException(status_code=400, detail="Укажите email или телефон")
+
+    phone = normalize_phone(payload.phone) if payload.phone else None
+
+    if payload.email:
+        existing = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email уже используется")
+
+    if phone:
+        existing = db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Телефон уже используется")
+
     user = User(
         name=payload.name,
         email=payload.email,
+        phone=phone,
         password_hash=hash_password(payload.password),
         role=payload.role,
         warehouse=payload.warehouse,

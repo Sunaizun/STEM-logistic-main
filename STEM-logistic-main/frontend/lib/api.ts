@@ -27,12 +27,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   return data as T;
 }
 
-export async function login(email: string, password: string) {
+export async function login(identifier: string, password: string) {
   const form = new URLSearchParams();
-  form.append('username', email);
+  form.append('username', identifier);
   form.append('password', password);
   const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
-  if (!res.ok) throw new Error('Wrong login or password');
+  if (!res.ok) throw new Error('Неверный логин или пароль');
   return res.json() as Promise<{ access_token: string; token_type: string }>;
 }
 
@@ -40,7 +40,7 @@ export const api = {
   deleteBox: (code: string) => apiFetch('/boxes/' + encodeURIComponent(code), { method: 'DELETE' }),
   me: () => apiFetch<UserOut>('/auth/me'),
   users: () => apiFetch<UserOut[]>('/users'),
-  createUser: (payload: { name: string; email: string; password: string; role: UserRole; warehouse?: string | null }) => apiFetch<UserOut>('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  createUser: (payload: { name: string; email?: string; phone?: string; password: string; role: UserRole; warehouse?: string | null }) => apiFetch<UserOut>('/users', { method: 'POST', body: JSON.stringify(payload) }),
   projects: () => apiFetch<ProjectOut[]>('/projects'),
   project: (id: string) => apiFetch<ProjectDetailOut>(`/projects/${id}`),
   createProject: (payload: unknown) => apiFetch<ProjectOut>('/projects', { method: 'POST', body: JSON.stringify(payload) }),
@@ -55,8 +55,12 @@ export const api = {
     return apiFetch<ImportBatchOut>('/imports/1c-excel', { method: 'POST', body: fd });
   },
   confirmImport: (id: string) => apiFetch<ImportConfirmOut>('/imports/' + id + '/confirm', { method: 'POST' }),
+
+  changePassword: (payload: { old_password: string; new_password: string }) =>
+  apiFetch<{ ok: boolean }>('/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export function publicLabelPdfUrl(publicToken: string) {
   return `${API_URL}/public/boxes/${encodeURIComponent(publicToken)}/label.pdf`;
 }
+

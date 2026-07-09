@@ -10,15 +10,28 @@ from app.services.audit_service import audit
 
 router = APIRouter(prefix="/scan", tags=["scan"])
 
+ALLOWED_ACTIONS: dict[UserRole, set[BoxEventType]] = {
+    UserRole.ADMIN: {BoxEventType.WAREHOUSE_IN, BoxEventType.WAREHOUSE_OUT, BoxEventType.DELIVERED},
+    UserRole.MANAGER: {BoxEventType.WAREHOUSE_IN, BoxEventType.WAREHOUSE_OUT, BoxEventType.DELIVERED},
+    UserRole.WAREHOUSE: {BoxEventType.WAREHOUSE_IN, BoxEventType.WAREHOUSE_OUT},
+    UserRole.PN: {BoxEventType.WAREHOUSE_IN, BoxEventType.DELIVERED},
+}
+
 
 @router.post("/box", response_model=BoxScanOut)
-def scan_box(payload: BoxScanIn, db: Session = Depends(get_db), current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.WAREHOUSE, UserRole.PN))):
+def scan_box(
+    payload: BoxScanIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.WAREHOUSE, UserRole.PN)),
+):
+    if payload.event_type not in ALLOWED_ACTIONS.get(current_user.role, set()):
+        raise HTTPException(status_code=403, detail="Ваша роль не позволяет выполнить это действие")
+
     code = payload.box_code.strip()
     box = db.execute(select(Box).options(selectinload(Box.contents)).where(Box.box_code == code)).scalar_one_or_none()
     if not box:
         return BoxScanOut(success=False, message=f"Коробка {code} не найдена", box=None, event=None)
 
-        # Проверки на повторное действие
     if payload.event_type == BoxEventType.WAREHOUSE_IN and box.status == BoxStatus.IN_WAREHOUSE:
         raise HTTPException(status_code=400, detail="Коробка уже на складе")
     if payload.event_type == BoxEventType.WAREHOUSE_OUT and box.status == BoxStatus.SHIPPED:

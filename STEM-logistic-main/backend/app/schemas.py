@@ -14,7 +14,8 @@ class TokenOut(BaseModel):
 
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr
+    email: EmailStr | None = None
+    phone: str | None = None
     password: str = Field(min_length=6)
     role: UserRole
     warehouse: WarehouseCode | None = None
@@ -23,7 +24,8 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: str
     name: str
-    email: EmailStr
+    email: EmailStr | None = None
+    phone: str | None = None
     role: UserRole
     warehouse: WarehouseCode | None = None
     is_active: bool

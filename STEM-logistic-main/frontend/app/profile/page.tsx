@@ -1,0 +1,65 @@
+'use client';
+import Shell from '@/components/Shell';
+import { api } from '@/lib/api';
+import type { UserOut } from '@/types';
+import { useEffect, useState } from 'react';
+
+const roleLabels: Record<string, string> = {
+  ADMIN: 'Админ', MANAGER: 'Менеджер', WAREHOUSE: 'Складовщик', PN: 'ПН'
+};
+
+export default function ProfilePage() {
+  const [user, setUser] = useState<UserOut | null>(null);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => { api.me().then(setUser).catch(() => {}); }, []);
+
+  async function submitPasswordChange() {
+    setError(''); setMessage('');
+    if (newPassword.length < 6) { setError('Новый пароль должен быть не короче 6 символов'); return; }
+    try {
+      await api.changePassword({ old_password: oldPassword, new_password: newPassword });
+      setMessage('Пароль успешно изменён');
+      setOldPassword(''); setNewPassword('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка смены пароля');
+    }
+  }
+
+  if (!user) return null;
+
+  return (
+    <Shell>
+      <div className="top">
+        <div><h1 className="h1">Профиль</h1></div>
+      </div>
+
+      <section className="card" style={{ marginBottom: 18 }}>
+        <h2>Данные</h2>
+        <div className="grid grid-2" style={{ marginTop: 12 }}>
+          <div className="field"><label>Имя</label><div>{user.name}</div></div>
+          <div className="field"><label>Роль</label><div>{roleLabels[user.role] || user.role}</div></div>
+          <div className="field"><label>Email</label><div>{user.email || '—'}</div></div>
+          <div className="field"><label>Телефон</label><div>{user.phone || '—'}</div></div>
+          <div className="field"><label>Склад</label><div>{user.warehouse === 'ASTANA' ? 'Астана' : user.warehouse === 'ALMATY' ? 'Алматы' : '—'}</div></div>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Сменить пароль</h2>
+        {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
+        {message && <div className="success" style={{ marginTop: 12 }}>{message}</div>}
+        <div className="grid grid-2" style={{ marginTop: 12 }}>
+          <div className="field"><label>Текущий пароль</label><input className="input" type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} /></div>
+          <div className="field"><label>Новый пароль</label><input className="input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div>
+        </div>
+        <div className="actions" style={{ marginTop: 12 }}>
+          <button className="btn black" onClick={submitPasswordChange}>Сохранить</button>
+        </div>
+      </section>
+    </Shell>
+  );
+}
