@@ -141,19 +141,19 @@ export default function UsersPage() {
           <tbody>
             {users.map(u => (
               <tr key={u.id} className={isAdmin ? 'row-click' : ''} onClick={() => isAdmin && startEdit(u)} style={{ cursor: isAdmin ? 'pointer' : 'default' }}>
-                <td>{u.name}</td>
-                <td className="mono">{u.email || '—'}</td>
-                <td className="mono">{u.phone || '—'}</td>
-                <td><span className="badge gray">{roleLabels[u.role] || u.role}</span></td>
-                <td>{u.warehouse === 'ASTANA' ? 'Астана' : u.warehouse === 'ALMATY' ? 'Алматы' : '—'}</td>
+                <td data-label="Имя">{u.name}</td>
+                <td data-label="Email" className="mono">{u.email || '—'}</td>
+                <td data-label="Телефон" className="mono">{u.phone || '—'}</td>
+                <td data-label="Роль"><span className="badge gray">{roleLabels[u.role] || u.role}</span></td>
+                <td data-label="Склад">{u.warehouse === 'ASTANA' ? 'Астана' : u.warehouse === 'ALMATY' ? 'Алматы' : '—'}</td>
                 {isAdmin && (
-                  <td>
+                  <td data-label="">
                     <button className="btn red" onClick={(e) => { e.stopPropagation(); deleteUser(u.id); }} style={{ fontSize: 12, padding: '4px 8px' }}>X</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
+                    </td>
+                  )}
+                  </tr>
+                ))}
+                </tbody>
         </table>
       </section>
     </Shell>

@@ -22,6 +22,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<UserOut | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!getToken() && !path.startsWith('/login') && !path.startsWith('/box/')) {
@@ -35,6 +36,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setReady(true);
   }, [path, router]);
 
+  useEffect(() => { setMenuOpen(false); }, [path]);
+
   if (!ready) return null;
   if (path.startsWith('/login') || path.startsWith('/box/')) return <>{children}</>;
 
@@ -42,8 +45,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="layout">
-      <aside className="sidebar">
+      <header className="topbar">
+        <button className="burger" onClick={() => setMenuOpen(v => !v)} aria-label="Меню">
+          <span /><span /><span />
+        </button>
         <div className="brand">STEM WMS</div>
+      </header>
+
+      {menuOpen && <div className="overlay" onClick={() => setMenuOpen(false)} />}
+
+      <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+        <div className="brand desktop-only">STEM WMS</div>
         <nav className="nav">
           {links.map(l => (
             <Link key={l.href} href={l.href} className={path === l.href ? 'active' : ''}>{l.label}</Link>
@@ -65,6 +77,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           Выйти
         </button>
       </aside>
+
       <main className="main">{children}</main>
     </div>
   );
