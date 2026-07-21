@@ -10,7 +10,6 @@ const roleLabels: Record<string, string> = {
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserOut | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,6 +17,7 @@ export default function ProfilePage() {
   const [profileError, setProfileError] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
 
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
@@ -51,12 +51,14 @@ export default function ProfilePage() {
       await api.changePassword({ old_password: oldPassword, new_password: newPassword });
       setMessage('Пароль успешно изменён');
       setOldPassword(''); setNewPassword('');
+      setTimeout(() => setShowPasswordForm(false), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка смены пароля');
     }
   }
 
   if (!user) return null;
+  const initial = user.name.trim().charAt(0).toUpperCase() || '?';
 
   return (
     <Shell>
@@ -64,48 +66,63 @@ export default function ProfilePage() {
         <div><h1 className="h1">Профиль</h1></div>
       </div>
 
-      <section className="card" style={{ marginBottom: 18 }}>
-        <h2>Данные</h2>
-        <div className="grid grid-2" style={{ marginTop: 12 }}>
-          <div className="field"><label>Роль</label><div>{roleLabels[user.role] || user.role}</div></div>
-          <div className="field"><label>Склад</label><div>{user.warehouse === 'ASTANA' ? 'Астана' : user.warehouse === 'ALMATY' ? 'Алматы' : '—'}</div></div>
+      <section className="card">
+        <div className="profile-layout">
+          <div className="profile-avatar-col">
+            <div className="avatar-circle">{initial}</div>
+            <div className="badge gray" style={{ marginTop: 12 }}>{roleLabels[user.role] || user.role}</div>
+            {user.warehouse && (
+              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--muted)' }}>
+                Склад: {user.warehouse === 'ASTANA' ? 'Астана' : 'Алматы'}
+              </div>
+            )}
+          </div>
+
+          <div className="profile-fields-col">
+            {profileError && <div className="error">{profileError}</div>}
+            {profileMessage && <div className="success">{profileMessage}</div>}
+
+            <div className="profile-row">
+              <label>Имя</label>
+              <input className="input" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+
+            <div className="profile-row">
+              <label>Email</label>
+              <input className="input" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+
+            <div className="profile-row">
+              <label>Телефон</label>
+              <input className="input" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+
+            <div className="profile-row">
+              <label>Пароль</label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <input className="input" type="password" value="••••••••" disabled style={{ flex: 1 }} />
+                <button className="btn ghost" onClick={() => setShowPasswordForm(v => !v)}>Изменить</button>
+              </div>
+            </div>
+
+            {showPasswordForm && (
+              <div className="password-inline">
+                {error && <div className="error">{error}</div>}
+                {message && <div className="success">{message}</div>}
+                <div className="grid grid-2">
+                  <div className="field"><label>Текущий пароль</label><input className="input" type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} /></div>
+                  <div className="field"><label>Новый пароль</label><input className="input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div>
+                </div>
+                <button className="btn black" onClick={submitPasswordChange}>Сохранить пароль</button>
+              </div>
+            )}
+
+            <div className="actions" style={{ marginTop: 18 }}>
+              <button className="btn black" onClick={saveProfile}>Сохранить изменения</button>
+            </div>
+          </div>
         </div>
       </section>
-
-      <button className="btn ghost" onClick={() => setShowSettings(v => !v)}>
-        ⚙ Настройки {showSettings ? '▲' : '▼'}
-      </button>
-
-      {showSettings && (
-        <>
-          <section className="card" style={{ marginTop: 12 }}>
-            <h2>Мои данные</h2>
-            {profileError && <div className="error" style={{ marginTop: 12 }}>{profileError}</div>}
-            {profileMessage && <div className="success" style={{ marginTop: 12 }}>{profileMessage}</div>}
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <div className="field"><label>Имя</label><input className="input" value={name} onChange={e => setName(e.target.value)} /></div>
-              <div className="field"><label>Email</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></div>
-              <div className="field"><label>Телефон</label><input className="input" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-            </div>
-            <div className="actions" style={{ marginTop: 12 }}>
-              <button className="btn black" onClick={saveProfile}>Сохранить</button>
-            </div>
-          </section>
-
-          <section className="card" style={{ marginTop: 12 }}>
-            <h2>Сменить пароль</h2>
-            {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
-            {message && <div className="success" style={{ marginTop: 12 }}>{message}</div>}
-            <div className="grid grid-2" style={{ marginTop: 12 }}>
-              <div className="field"><label>Текущий пароль</label><input className="input" type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} /></div>
-              <div className="field"><label>Новый пароль</label><input className="input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div>
-            </div>
-            <div className="actions" style={{ marginTop: 12 }}>
-              <button className="btn black" onClick={submitPasswordChange}>Сохранить</button>
-            </div>
-          </section>
-        </>
-      )}
     </Shell>
   );
 }
