@@ -58,6 +58,9 @@ export const api = {
 
   changePassword: (payload: { old_password: string; new_password: string }) =>
   apiFetch<{ ok: boolean }>('/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
+
+  updateProfile: (payload: { name: string; email?: string; phone?: string }) =>
+  apiFetch<UserOut>('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 };
 
 export function publicLabelPdfUrl(publicToken: string) {

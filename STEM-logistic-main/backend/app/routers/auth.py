@@ -44,7 +44,6 @@ class PasswordChangeIn(BaseModel):
     old_password: str
     new_password: str = Field(min_length=6)
 
-
 @router.post("/change-password")
 def change_password(payload: PasswordChangeIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not verify_password(payload.old_password, current_user.password_hash):
@@ -52,3 +51,39 @@ def change_password(payload: PasswordChangeIn, db: Session = Depends(get_db), cu
     current_user.password_hash = hash_password(payload.new_password)
     db.commit()
     return {"ok": True}
+class ProfileUpdateIn(BaseModel):
+    name: str
+    email: str | None = None
+    phone: str | None = None
+
+
+def normalize_phone(raw: str) -> str:
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if digits.startswith("8") and len(digits) == 11:
+        digits = "7" + digits[1:]
+    return digits
+
+
+@router.patch("/me", response_model=UserOut)
+def update_profile(payload: ProfileUpdateIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not payload.email and not payload.phone:
+        raise HTTPException(status_code=400, detail="Укажите email или телефон")
+
+    phone = normalize_phone(payload.phone) if payload.phone else None
+
+    if payload.email and payload.email != current_user.email:
+        existing = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email уже используется")
+
+    if phone and phone != current_user.phone:
+        existing = db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Телефон уже используется")
+
+    current_user.name = payload.name
+    current_user.email = payload.email
+    current_user.phone = phone
+    db.commit()
+    db.refresh(current_user)
+    return current_user
