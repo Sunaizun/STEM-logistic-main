@@ -21,7 +21,7 @@ services:
     container_name: stem_wms_backend
     environment:
       DATABASE_URL: postgresql+psycopg://stem:stem@db:5432/stem_wms
-      JWT_SECRET_KEY: d4f8a2b1c9e6f3a7b5d0c8e2f4a6b9c1
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: https://conf-joseph-proposals-lab.trycloudflare.com,http://localhost:3000
       PUBLIC_BASE_URL: https://conf-joseph-proposals-lab.trycloudflare.com
     ports:
