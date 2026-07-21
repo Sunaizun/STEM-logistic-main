@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import type { BoxEventType, BoxScanOut, UserOut } from '@/types';
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useRouter } from 'next/navigation';
 
 const allActions: {value: BoxEventType; label: string; roles: string[]}[] = [
   {value:'WAREHOUSE_IN', label:'Принять на склад', roles:['ADMIN','MANAGER','WAREHOUSE','PN']},
@@ -14,6 +15,7 @@ const allActions: {value: BoxEventType; label: string; roles: string[]}[] = [
 const SCANNER_ELEMENT_ID = 'qr-reader';
 
 export default function ScanPage() {
+  const router = useRouter();
   const [eventType, setEventType] = useState<BoxEventType>('WAREHOUSE_IN');
   const [location, setLocation] = useState('');
   const [code, setCode] = useState('');
@@ -66,8 +68,17 @@ export default function ScanPage() {
             fps: 10,
             qrbox: { width: 280, height: 280 },},
           (decodedText) => {
-            setCode(decodedText);
             stopCamera();
+            if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+              try {
+                const url = new URL(decodedText);
+                router.push(url.pathname + url.search);
+              } catch {
+                window.location.href = decodedText;
+              }
+            } else {
+              setCode(decodedText);
+            }
           },
           () => {}
         );

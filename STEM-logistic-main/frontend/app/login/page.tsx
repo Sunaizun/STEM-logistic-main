@@ -10,15 +10,15 @@ export default function LoginPage() {
   const router = useRouter();
 
   async function handleLogin() {
-    setError('');
-    try {
-      const { access_token } = await login(identifier, password);
-      setToken(access_token);
-      router.push('/dashboard');
-    } catch (e) {
-      setError('Неверный логин или пароль');
-    }
+  setError('');
+  try {
+    const { access_token } = await login(identifier, password);
+    setToken(access_token);
+    router.push('/dashboard');
+  } catch (e) {
+    setError('ОШИБКА (временно для отладки): ' + (e instanceof Error ? e.message : String(e)));
   }
+}
 
   return (
     <div className="login-page">
